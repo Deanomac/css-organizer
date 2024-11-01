@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced CSS Tool: Sort, Detect Duplicates, and Analyze Usage</title>
+    <!-- Prettier CDN for formatting -->
+    <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@2.8.8/parser-postcss.js"></script>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f2f5;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        h1, h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        .section {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .section-number {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output, .duplicates, .unused {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            background-color: #272822;
+            color: #f8f8f2;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: auto;
+            white-space: pre-wrap;
+            position: relative;
+        }
+        .duplicates, .unused {
+            background-color: #ffffff;
+            color: #000;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+        .duplicate-item {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #d32f2f;
+            padding-bottom: 10px;
+        }
+        .duplicate-item h4 {
+            margin-bottom: 10px;
+            color: #d32f2f;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        th, td {
+            border: 1px solid #d32f2f;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #ffebee;
+        }
+        .unique-input {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .copy-button, .download-button {
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin-top: 5px;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+        .copy-button:hover, .download-button:hover {
+            background-color: #218838;
+        }
+        .warning {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        .unused-list {
+            list-style-type: disc;
+            margin-left: 20px;
+        }
+        /* Responsive Design */
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .section {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+        }
+        /* Collapsible Code Blocks */
+        .collapsible {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 16px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .active, .collapsible:hover {
+            background-color: #0056b3;
+        }
+        .content {
+            padding: 0 15px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background-color: #f1f1f1;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .content pre {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            overflow: auto;
+        }
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .theme-toggle:hover {
+            background-color: #5a6268;
+        }
+        /* Light Mode Overrides */
+        body.light-mode {
+            background-color: #ffffff;
+            color: #000;
+        }
+        body.light-mode .section {
+            background-color: #f9f9f9;
+            color: #000;
+        }
+        body.light-mode .output, body.light-mode .duplicates, body.light-mode .unused {
+            background-color: #ffffff;
+            color: #000;
+        }
+        body.light-mode .collapsible {
+            background-color: #6c757d;
+            color: white;
+        }
+        body.light-mode .active, body.light-mode .collapsible:hover {
+            background-color: #5a6268;
+        }
+        /* Tooltip Styles */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            color: #007bff;
+            text-decoration: underline dotted;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 220px;
+            background-color: #555;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position above */
+            left: 50%;
+            margin-left: -110px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%; /* Arrow at the bottom */
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="theme-toggle" id="themeToggle" title="Toggle Light/Dark Mode">🌙</button>
+
+    <h1>Advanced CSS Tool</h1>
+    <div class="container">
+        <!-- 1. CSS Input Section -->
+        <div class="section" id="css-input-section">
+            <div class="section-number">1. CSS Input</div>
+            <h3>Input CSS</h3>
+            <textarea id="inputCSS" placeholder="Paste your CSS code here...">
+/* Example CSS */
+h1 {
+    background: blue;
+}
+
+h1 {
+    background: yellow;
+}
+
+.theme-christmas {
+    --primary-color: #d32f2f;
+
+    & table {
+        border-collapse: collapse;
+    }
+}
+
+.theme-christmas table {
+    border: 1px solid #ccc;
+}
+
+h2 {
+    color: green;
+}
+
+h2 {
+    color: red;
+}
+            </textarea>
+        </div>
+
+        <!-- 2. HTML Input Section -->
+        <div class="section" id="html-input-section">
+            <div class="section-number">2. HTML Input</div>
+            <h3>Input HTML</h3>
+            <textarea id="inputHTML" placeholder="Paste your HTML code here...">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sample HTML</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Welcome to the Christmas Theme</h1>
+    <h2>Subheading</h2>
+    <div class="theme-christmas">
+        <table>
+            <tr>
+                <th>Header</th>
+                <td>Data</td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
+            </textarea>
+        </div>
+
+        <!-- 3. Process Button Section -->
+        <div class="section" id="process-section">
+            <div class="section-number">3. Process CSS</div>
+            <button id="processButton" title="Sort, Format, Detect Duplicates & Analyze Usage">Sort, Format & Analyze CSS</button>
+            <button id="copyAllButton" class="copy-button" title="Copy All Sorted CSS to Clipboard">Copy All CSS</button>
+            <button id="downloadCSSButton" class="download-button" title="Download Sorted CSS">Download CSS</button>
+            <button id="downloadDuplicatesButton" class="download-button" title="Download Duplicates Report">Download Duplicates</button>
+        </div>
+
+        <!-- 4. Sorted & Formatted CSS Output -->
+        <div class="section" id="sorted-css-section">
+            <div class="section-number">4. Sorted & Formatted CSS</div>
+            <h3>Sorted & Formatted CSS</h3>
+            <button class="collapsible" title="Expand/Collapse Sorted CSS">Toggle View ▲</button>
+            <div class="content">
+                <pre id="outputCSS">
+<!-- Sorted CSS will appear here -->
+                </pre>
+            </div>
+        </div>
+
+        <!-- 5. Duplicate Selectors Output -->
+        <div class="section" id="duplicates-section">
+            <div class="section-number">5. Duplicate Selectors</div>
+            <h3>Duplicate Selectors</h3>
+            <div id="outputDuplicates" class="duplicates">
+                <!-- Duplicate selectors will appear here -->
+            </div>
+        </div>
+
+        <!-- 6. Unused Selectors Output -->
+        <div class="section" id="unused-section">
+            <div class="section-number">6. Unused CSS Selectors</div>
+            <h3>Unused CSS Selectors</h3>
+            <div id="outputUnused" class="unused">
+                <!-- Unused selectors will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle Functionality
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            if (document.body.classList.contains('light-mode')) {
+                themeToggle.textContent = '☀️';
+                themeToggle.title = 'Toggle Dark Mode';
+            } else {
+                themeToggle.textContent = '🌙';
+                themeToggle.title = 'Toggle Light Mode';
+            }
+        });
+
+        // Event Listener for Process Button
+        document.getElementById('processButton').addEventListener('click', function() {
+            const cssInput = document.getElementById('inputCSS').value;
+            const htmlInput = document.getElementById('inputHTML').value;
+
+            try {
+                const { sortedCSS, duplicates } = processCSS(cssInput);
+                const formattedCSS = formatWithPrettier(sortedCSS);
+                document.getElementById('outputCSS').textContent = formattedCSS;
+
+                displayDuplicates(duplicates);
+                analyzeCSSUsage(duplicates, htmlInput);
+            } catch (error) {
+                alert('Error processing CSS: ' + error.message);
+                console.error(error);
+            }
+        });
+
+        // Event Listener for Copy All CSS Button
+        document.getElementById('copyAllButton').addEventListener('click', function() {
+            const sortedCSS = document.getElementById('outputCSS').textContent;
+            copyToClipboard(sortedCSS);
+            alert('Sorted CSS copied to clipboard!');
+        });
+
+        // Event Listener for Download CSS Button
+        document.getElementById('downloadCSSButton').addEventListener('click', function() {
+            const sortedCSS = document.getElementById('outputCSS').textContent;
+            downloadFile('sorted_styles.css', sortedCSS);
+        });
+
+        // Event Listener for Download Duplicates Button
+        document.getElementById('downloadDuplicatesButton').addEventListener('click', function() {
+            const duplicatesContent = document.getElementById('outputDuplicates').innerText;
+            downloadFile('duplicates_report.txt', duplicatesContent);
+        });
+
+        // Function to Process CSS: Sort, Detect Duplicates
+        function processCSS(css) {
+            // Remove comments
+            const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+            // Handle media queries separately
+            const mediaQueryRegex = /@media[^{]*\{([\s\S]+?\})\s*\}/g;
+            let mediaQueries = [];
+            let cssWithoutMedia = withoutComments.replace(mediaQueryRegex, (match, p1) => {
+                mediaQueries.push(match.trim());
+                return '';
+            });
+
+            // Regex to match selectors and their declarations
+            const regex = /([^{]+)\{([^}]+)\}/g;
+            let matches;
+            const selectorMap = {};
+
+            while ((matches = regex.exec(cssWithoutMedia)) !== null) {
+                let selectorPart = matches[1].trim();
+                const declarations = matches[2].trim();
+
+                // Split multiple selectors by comma
+                let selectors = selectorPart.split(',').map(s => s.trim());
+
+                selectors.forEach(selector => {
+                    if (selector.includes('&')) {
+                        // Handle nested selectors by skipping them
+                        console.warn(`Nested selector "${selector}" is skipped.`);
+                        return;
+                    }
+
+                    // Initialize array if selector not seen before
+                    if (!selectorMap[selector]) {
+                        selectorMap[selector] = [];
+                    }
+                    selectorMap[selector].push(declarations);
+                });
+            }
+
+            // Sort the selectors alphabetically
+            const sortedSelectors = Object.keys(selectorMap).sort((a, b) => a.localeCompare(b));
+
+            // Reconstruct sorted CSS
+            let sortedCSS = '';
+            sortedSelectors.forEach(selector => {
+                const declarations = selectorMap[selector];
+                declarations.forEach(decl => {
+                    sortedCSS += `${selector} {\n${decl}\n}\n\n`;
+                });
+            });
+
+            // Append media queries at the end
+            if (mediaQueries.length > 0) {
+                sortedCSS += '\n' + mediaQueries.join('\n\n');
+            }
+
+            // Detect duplicates (selectors with more than one declaration)
+            const duplicates = {};
+            sortedSelectors.forEach(selector => {
+                if (selectorMap[selector].length > 1) {
+                    duplicates[selector] = selectorMap[selector];
+                }
+            });
+
+            return { sortedCSS: sortedCSS.trim(), duplicates };
+        }
+
+        // Function to Format CSS with Prettier
+        function formatWithPrettier(css) {
+            return prettier.format(css, {
+                parser: "css",
+                plugins: prettierPlugins,
+                singleQuote: true,
+                tabWidth: 4,
+                useTabs: false,
+                bracketSpacing: true,
+                semi: true,
+                trailingComma: "none",
+            });
+        }
+
+        // Function to Display Duplicates
+        function displayDuplicates(duplicates) {
+            const output = document.getElementById('outputDuplicates');
+            output.innerHTML = ''; // Clear previous duplicates
+
+            if (Object.keys(duplicates).length === 0) {
+                output.innerHTML = '<p class="warning">No duplicate selectors found.</p>';
+                return;
+            }
+
+            for (const selector in duplicates) {
+                const declarations = duplicates[selector];
+                const duplicateDiv = document.createElement('div');
+                duplicateDiv.classList.add('duplicate-item');
+
+                const header = document.createElement('h4');
+                header.textContent = `Selector: ${selector}`;
+                duplicateDiv.appendChild(header);
+
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                const th1 = document.createElement('th');
+                th1.textContent = 'Declaration Set';
+                const th2 = document.createElement('th');
+                th2.textContent = 'Properties';
+                headerRow.appendChild(th1);
+                headerRow.appendChild(th2);
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                declarations.forEach((decl, index) => {
+                    const row = document.createElement('tr');
+                    const td1 = document.createElement('td');
+                    td1.textContent = `Set ${index + 1}`;
+                    const td2 = document.createElement('td');
+                    td2.textContent = decl;
+                    row.appendChild(td1);
+                    row.appendChild(td2);
+                    tbody.appendChild(row);
+                });
+                table.appendChild(tbody);
+                duplicateDiv.appendChild(table);
+
+                // Add unique value assignment
+                const uniqueLabel = document.createElement('label');
+                uniqueLabel.textContent = `Add unique suffix to selector "${selector}":`;
+                duplicateDiv.appendChild(uniqueLabel);
+
+                const uniqueInput = document.createElement('input');
+                uniqueInput.type = 'text';
+                uniqueInput.placeholder = 'Enter suffix (e.g., -unique1)';
+                uniqueInput.classList.add('unique-input');
+                duplicateDiv.appendChild(uniqueInput);
+
+                const applyButton = document.createElement('button');
+                applyButton.textContent = 'Apply Unique Suffix';
+                applyButton.classList.add('copy-button');
+                applyButton.addEventListener('click', function() {
+                    const suffix = uniqueInput.value.trim();
+                    if (suffix === '') {
+                        alert('Please enter a suffix.');
+                        return;
+                    }
+                    applyUniqueSuffix(selector, suffix);
+                });
+                duplicateDiv.appendChild(applyButton);
+
+                output.appendChild(duplicateDiv);
+            }
+        }
+
+        // Function to Apply Unique Suffix to Duplicates
+        function applyUniqueSuffix(selector, suffix) {
+            // Fetch the sorted CSS
+            let sortedCSS = document.getElementById('outputCSS').textContent;
+
+            // Find all occurrences of the selector
+            const selectorRegex = new RegExp(`(${escapeRegExp(selector)}\\s*\\{[^}]+\\})`, 'g');
+
+            // Replace each occurrence with the selector plus suffix, except the first
+            let count = 0;
+            sortedCSS = sortedCSS.replace(selectorRegex, (match) => {
+                count++;
+                if (count === 1) {
+                    // Keep the first set as is
+                    return match;
+                } else {
+                    // Modify subsequent sets with suffix
+                    const modifiedSelector = `${selector}${suffix}`;
+                    return match.replace(selector, modifiedSelector);
+                }
+            });
+
+            // Update the sorted CSS output
+            const formattedCSS = formatWithPrettier(sortedCSS);
+            document.getElementById('outputCSS').textContent = formattedCSS;
+
+            // Notify the user
+            alert(`Applied suffix "${suffix}" to duplicate selector "${selector}".`);
+
+            // After applying, re-process the CSS to update duplicates
+            const { sortedCSS: newSortedCSS, duplicates: newDuplicates } = processCSS(sortedCSS);
+            const newFormattedCSS = formatWithPrettier(newSortedCSS);
+            document.getElementById('outputCSS').textContent = newFormattedCSS;
+            displayDuplicates(newDuplicates);
+            // Re-analyze CSS usage
+            const htmlInput = document.getElementById('inputHTML').value;
+            analyzeCSSUsage(newDuplicates, htmlInput);
+        }
+
+        // Utility function to escape special characters in regex
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Function to Analyze CSS Usage Against HTML
+        function analyzeCSSUsage(duplicates, html) {
+            // Create a temporary DOM to parse the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            // Get all unique selectors from CSS (including duplicates)
+            const selectors = new Set();
+
+            // Fetch the sorted CSS
+            const sortedCSS = document.getElementById('outputCSS').textContent;
+
+            // Regex to match selectors
+            const regex = /([^{]+)\{[^}]+\}/g;
+            let matches;
+            while ((matches = regex.exec(sortedCSS)) !== null) {
+                let selectorPart = matches[1].trim();
+                // Split multiple selectors by comma
+                let selectorsArray = selectorPart.split(',').map(s => s.trim());
+                selectorsArray.forEach(sel => {
+                    if (!sel.includes('&')) { // Skip nested selectors
+                        selectors.add(sel);
+                    }
+                });
+            }
+
+            // Now, check each selector against the HTML
+            const unusedSelectors = [];
+            selectors.forEach(selector => {
+                try {
+                    if (!tempDiv.querySelector(selector)) {
+                        unusedSelectors.push(selector);
+                    }
+                } catch (error) {
+                    console.warn(`Invalid selector "${selector}" skipped.`);
+                }
+            });
+
+            // Display unused selectors
+            const outputUnused = document.getElementById('outputUnused');
+            outputUnused.innerHTML = ''; // Clear previous output
+
+            if (unusedSelectors.length === 0) {
+                outputUnused.innerHTML = '<p class="warning">All selectors are used in the HTML.</p>';
+                return;
+            }
+
+            const list = document.createElement('ul');
+            list.classList.add('unused-list');
+            unusedSelectors.forEach(selector => {
+                const listItem = document.createElement('li');
+                listItem.textContent = selector;
+                list.appendChild(listItem);
+            });
+            outputUnused.appendChild(list);
+        }
+
+        // Function to Copy Text to Clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Success
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+
+        // Function to Download File
+        function downloadFile(filename, content) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Collapsible Sections Functionality
+        const collapsibles = document.getElementsByClassName("collapsible");
+        for (let i = 0; i < collapsibles.length; i++) {
+            collapsibles[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                const content = this.nextElementSibling;
+                if (content.style.maxHeight){
+                    content.style.maxHeight = null;
+                    this.textContent = "Toggle View ▲";
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    this.textContent = "Toggle View ▼";
+                } 
+            });
+        }
+    </script>
+
+</body>
+</html>
