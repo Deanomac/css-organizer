@@ -27,9 +27,10 @@
             margin-bottom: 10px;
             color: #333;
         }
+        /* Automatic Section Numbering */
         .container {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px;
         }
         .section {
@@ -38,11 +39,19 @@
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             transition: background-color 0.3s, color 0.3s;
+            position: relative;
         }
-        .section-number {
+        .section::before {
+            counter-increment: section;
+            content: counter(section) ". ";
+            position: absolute;
+            top: 20px;
+            left: 20px;
             font-weight: bold;
-            margin-bottom: 10px;
             color: #007bff;
+        }
+        .section h3 {
+            margin-left: 40px; /* To accommodate the section number */
         }
         textarea {
             width: 100%;
@@ -141,16 +150,6 @@
             list-style-type: disc;
             margin-left: 20px;
         }
-        /* Responsive Design */
-        @media (min-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-            .section {
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-        }
         /* Collapsible Code Blocks */
         .collapsible {
             background-color: #007bff;
@@ -164,6 +163,7 @@
             font-size: 16px;
             border-radius: 4px;
             margin-top: 10px;
+            transition: background-color 0.3s;
         }
         .active, .collapsible:hover {
             background-color: #0056b3;
@@ -268,7 +268,6 @@
     <div class="container">
         <!-- 1. CSS Input Section -->
         <div class="section" id="css-input-section">
-            <div class="section-number">1. CSS Input</div>
             <h3>Input CSS</h3>
             <textarea id="inputCSS" placeholder="Paste your CSS code here...">
 /* Example CSS */
@@ -298,13 +297,11 @@ h2 {
 
 h2 {
     color: red;
-}
             </textarea>
         </div>
 
         <!-- 2. HTML Input Section -->
         <div class="section" id="html-input-section">
-            <div class="section-number">2. HTML Input</div>
             <h3>Input HTML</h3>
             <textarea id="inputHTML" placeholder="Paste your HTML code here...">
 <!DOCTYPE html>
@@ -332,7 +329,7 @@ h2 {
 
         <!-- 3. Process Button Section -->
         <div class="section" id="process-section">
-            <div class="section-number">3. Process CSS</div>
+            <h3>Process CSS</h3>
             <button id="processButton" title="Sort, Format, Detect Duplicates & Analyze Usage">Sort, Format & Analyze CSS</button>
             <button id="copyAllButton" class="copy-button" title="Copy All Sorted CSS to Clipboard">Copy All CSS</button>
             <button id="downloadCSSButton" class="download-button" title="Download Sorted CSS">Download CSS</button>
@@ -341,7 +338,6 @@ h2 {
 
         <!-- 4. Sorted & Formatted CSS Output -->
         <div class="section" id="sorted-css-section">
-            <div class="section-number">4. Sorted & Formatted CSS</div>
             <h3>Sorted & Formatted CSS</h3>
             <button class="collapsible" title="Expand/Collapse Sorted CSS">Toggle View ▲</button>
             <div class="content">
@@ -353,7 +349,6 @@ h2 {
 
         <!-- 5. Duplicate Selectors Output -->
         <div class="section" id="duplicates-section">
-            <div class="section-number">5. Duplicate Selectors</div>
             <h3>Duplicate Selectors</h3>
             <div id="outputDuplicates" class="duplicates">
                 <!-- Duplicate selectors will appear here -->
@@ -362,7 +357,6 @@ h2 {
 
         <!-- 6. Unused Selectors Output -->
         <div class="section" id="unused-section">
-            <div class="section-number">6. Unused CSS Selectors</div>
             <h3>Unused CSS Selectors</h3>
             <div id="outputUnused" class="unused">
                 <!-- Unused selectors will appear here -->
